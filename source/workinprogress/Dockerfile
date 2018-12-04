@@ -86,7 +86,7 @@ RUN export uid=${HOST_UID} gid=${HOST_GID} && \
 USER ${USER_NAME}
 WORKDIR ${HOME_DIR}
 
-RUN mkdir multi_agent_learning
+RUN mkdir workinprogress
 RUN mkdir .jupyter
 COPY jupyter_notebook_config.py ./.jupyter
 
