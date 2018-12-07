@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 from vizdoom import *
 import numpy as np
-import h5py
+import h5py, math
 import skimage.transform
-from tabulate import tabulate
 import sys, os
 
-CONFIG_PATH = "./config/custom_config.cfg"
+CONFIG_PATH = "./config/simple_deathmatch.cfg"
 DEMO_PATH = "./demonstration/demodata.hdf5"
 RESOLUTION = (120,120)
 CROSS = (200,320)
 # SAVE_DEMO = True
 SAVE_DEMO = False
-START_TIME = 0
 
-REWARDS = {'living':-0.01, 'health_loss':-1, 'medkit':50, 'ammo':0.0, 'frag':500, 'dist':1e-3, 'suicide':-500}
+REWARDS = {'living':-0.01, 'healthloss':-1, 'medkit':50, 'ammo':0.0, 'frag':500, 'dist':1e-3, 'suicide':-500}
 
 def preprocess(img):
     if len(img.shape) == 3:
@@ -47,7 +45,7 @@ class GameInstance(object):
 
         self.n_bots=n_bots
         self.n_adv = steps_update_origin
-        self.rewards = reward_param
+        self.reward_param = reward_param
 
     def initialize_game(self, game, config_file_path):
         game.load_config(config_file_path)
@@ -60,14 +58,18 @@ class GameInstance(object):
         game.set_render_weapon(False)
         color = 4
         game.add_game_args("+name {} +colorset {}".format(self.name, color))
+        game.add_game_args("-host 1 -deathmatch +viz_nocheat 0 +viz_debug 0 +viz_respawn_delay 10 +viz_nocheat 0")
+        game.add_game_args("+sv_forcerespawn 1 +sv_noautoaim 1 +sv_respawnprotect 1 +sv_spawnfarthest 1 +sv_crouch 1")
         game.init()
         print(self.name + " initialized.")
         return game
 
     def new_episode(self):
-        self.game.new_episode()
+        self.game.send_game_command("removebots")
         for i in range(self.n_bots):
             self.game.send_game_command("addbot")
+
+        # self.game.new_episode()
 
         self.init_variables()        
         return 0
@@ -104,7 +106,7 @@ class GameInstance(object):
         new_posy = self.game.get_game_variable(GameVariable.POSITION_Y)
         new_damage_count = self.game.get_game_variable(GameVariable.DAMAGECOUNT)
 
-        reward = self.get_reward(new_frag_count - self.frag_count, new_death_count - self.death_count, \
+        reward, reward_detail = self.get_reward(new_frag_count - self.frag_count, new_death_count - self.death_count, \
                             new_health-self.health, new_ammo-self.ammo, new_posx-self.origin_x, new_posy-self.origin_y)
 
         self.frag_count = new_frag_count
@@ -119,7 +121,7 @@ class GameInstance(object):
             self.origin_x = self.posx
             self.origin_y = self.posy
 
-        return reward
+        return reward, reward_detail
 
     def make_action(self, step ,action):
         self.game.make_action(action)
@@ -129,7 +131,30 @@ class GameInstance(object):
         return self.game.advance_action(framerepeat)
 
     def get_reward(self, m_frag, m_death, m_health, m_ammo, m_posx, m_posy):
-        return 0
+        reward_detail = {}
+
+        if m_frag > 0:
+            reward_detail['frag'] = (m_frag) * self.reward_param['frag']
+            reward_detail['suicide'] = 0.0
+        else:
+            reward_detail['suicide'] = (m_frag*-1) * self.reward_param['suicide']
+            reward_detail['frag'] = 0.0
+
+        reward_detail['dist'] = (math.sqrt((m_posx)**2 + (m_posy)**2)) * self.reward_param['dist']
+
+        if m_health > 0:
+            reward_detail['medkit'] = self.reward_param['medkit']
+            reward_detail['health_loss'] = 0.0
+        else:
+            reward_detail['health_loss'] = m_health * self.reward_param['healthloss'] * (-1)
+            reward_detail['medkit'] = 0.0
+
+        if m_ammo > 0:
+            reward_detail['ammo'] = (m_ammo) * self.reward_param['ammo']
+        else:
+            reward_detail['ammo'] = 0.0
+
+        return sum(reward_detail.values()), reward_detail
 
     def get_screen_buff(self):
         return self.game.get_state().screen_buffer
@@ -210,11 +235,11 @@ if __name__ == "__main__":
 
     os.system('clear')
     game_engine = DoomGame()
-    game = GameInstance(game_engine, name="PLAYER1",config_path=CONFIG_PATH,steps_update_origin=10, n_bots=1, reward_param=REWARD)
+    game = GameInstance(game_engine, name="PLAYER1",config_path=CONFIG_PATH,steps_update_origin=10, n_bots=1, reward_param=REWARDS)
 
-    game.game.set_render_weapon(False)
-    game.game.set_render_crosshair(False)
-    game.game.init()
+    # game.game.set_render_weapon(False)
+    # game.game.set_render_crosshair(False)
+    # game.game.init()
     log_state = []
     log_state_center = []
     log_action = []
@@ -234,6 +259,8 @@ if __name__ == "__main__":
     step = 0
     pre_time = 0
     pre_frag_count = 0
+
+    game.new_episode()
     while not game.is_episode_finished():
 
         s_row = game.get_screen_buff()
@@ -249,15 +276,17 @@ if __name__ == "__main__":
         pre_frag_count = cur_frag_count
 
         if not action.count(1.0) == 0:
-            r = game.update_variables(step)
-            sys.stdout.write("\r---%d----"%(step))
-            sys.stdout.write("\rENEMY_POS:", (game.get_enemy_x(), game.get_enemy_y()))
-            sys.stdout.write("\rENEMY_W_H:", (game.get_enemy_w(), game.get_enemy_h()))
-            sys.stdout.write("\rREWARD:", r)
-            sys.stdout.write("\rACTION:",action)
-            sys.stdout.write("\rFRAG:%d DEATH:%d"%(game.get_frag_count(), game.get_death_count()))
-            sys.stdout.write("\rHEALTH: %d AMMO:%d"%(game.get_health(), game.get_ammo()))
-            sys.stdout.write("\rPOSX: %.3f POSY: %.3f"%(game.get_pos_x(), game.get_pos_y()))
+            r, reward_detail = game.update_variables(step)
+            sys.stdout.write("\r---%d----\n"%(step))
+            sys.stdout.write("\rENEMY_POS: (%.2f, %.2f)\n"%(game.get_enemy_x(), game.get_enemy_y()))
+            sys.stdout.write("\rENEMY_W_H: (%.2f, %.2f)\n"%(game.get_enemy_w(), game.get_enemy_h()))
+            sys.stdout.write("\rREWARD:%.2f\n"%r)
+            sys.stdout.write("\rREWARD_DETAIL:"+str(reward_detail)+"\n")
+            sys.stdout.write("\rACTION:"+str(action)+"\n")
+            sys.stdout.write("\rFRAG:%d DEATH:%d KILL:%d \n"%(game.get_frag_count(), game.get_death_count(), game.get_kill_count()))
+            sys.stdout.write("\rHEALTH: %d AMMO:%d\n"%(game.get_health(), game.get_ammo()))
+            sys.stdout.write("\rPOSX: %.3f POSY: %.3f\n"%(game.get_pos_x(), game.get_pos_y()))
+            sys.stdout.flush()
             step += 1
             if SAVE_DEMO == True and cur_time >= START_TIME and not game.is_episode_finished():
               log_state.append(s)
@@ -299,8 +328,8 @@ if __name__ == "__main__":
         else:
             pass
 
-    print(tabulate([(int(game.game.get_game_variable(GameVariable.FRAGCOUNT)), int(game.game.get_game_variable(GameVariable.DEATHCOUNT)))], ['KILL', 'DEATH'], tablefmt='grid'))
-    print()
+    # print(tabulate([(int(game.game.get_game_variable(GameVariable.FRAGCOUNT)), int(game.game.get_game_variable(GameVariable.DEATHCOUNT)))], ['KILL', 'DEATH'], tablefmt='grid'))
+    # print()
 
     if SAVE_DEMO == True:
       
