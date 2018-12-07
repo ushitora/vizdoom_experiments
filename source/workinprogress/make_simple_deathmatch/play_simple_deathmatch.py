@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 from vizdoom import *
 import numpy as np
+import pandas as pd
 import h5py, math
 import skimage.transform
 import sys, os
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 CONFIG_PATH = "./config/simple_deathmatch.cfg"
-DEMO_PATH = "./demonstration/demodata.hdf5"
 RESOLUTION = (120,120)
 CROSS = (200,320)
 # SAVE_DEMO = True
 SAVE_DEMO = False
 
-REWARDS = {'living':-0.01, 'healthloss':-1, 'medkit':50, 'ammo':0.0, 'frag':500, 'dist':1e-3, 'suicide':-500}
+REWARDS = { 'healthloss':-0.008, 'medkit':1, 'ammo':0.0, 'frag':1, 'dist':1e-3, 'suicide':-1}
 
 def preprocess(img):
     if len(img.shape) == 3:
@@ -29,7 +30,7 @@ def preprocess(img):
     return img_over, img_center
 
 class GameInstance(object):
-    def __init__(self, game, name="Default", config_path=None, steps_update_origin=None, n_bots=None, reward_param=None):
+    def __init__(self, game, name="Default", config_path=None, steps_update_origin=None, n_bots=None, reward_param=None, timelimit=2):
         self.name = name
         self.game = self.initialize_game(game, config_path)
 
@@ -46,6 +47,7 @@ class GameInstance(object):
         self.n_bots=n_bots
         self.n_adv = steps_update_origin
         self.reward_param = reward_param
+        self.timelimit = timelimit
 
     def initialize_game(self, game, config_file_path):
         game.load_config(config_file_path)
@@ -58,7 +60,7 @@ class GameInstance(object):
         game.set_render_weapon(False)
         color = 4
         game.add_game_args("+name {} +colorset {}".format(self.name, color))
-        game.add_game_args("-host 1 -deathmatch +viz_nocheat 0 +viz_debug 0 +viz_respawn_delay 10 +viz_nocheat 0")
+        game.add_game_args("-host 1 -deathmatch +viz_nocheat 0 +viz_debug 0 +viz_respawn_delay 10 +viz_nocheat 0 +timelimit %f"%(float(TIMELIMIT)))
         game.add_game_args("+sv_forcerespawn 1 +sv_noautoaim 1 +sv_respawnprotect 1 +sv_spawnfarthest 1 +sv_crouch 1")
         game.init()
         print(self.name + " initialized.")
@@ -144,9 +146,9 @@ class GameInstance(object):
 
         if m_health > 0:
             reward_detail['medkit'] = self.reward_param['medkit']
-            reward_detail['health_loss'] = 0.0
+            reward_detail['healthloss'] = 0.0
         else:
-            reward_detail['health_loss'] = m_health * self.reward_param['healthloss'] * (-1)
+            reward_detail['healthloss'] = m_health * self.reward_param['healthloss'] * (-1)
             reward_detail['medkit'] = 0.0
 
         if m_ammo > 0:
@@ -233,9 +235,42 @@ class GameInstance(object):
 
 if __name__ == "__main__":
 
+    parser = ArgumentParser("PLAY SCRIPT in Simple Deathmatch",
+                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-d', '--demodata', metavar="DAMODATA_SAVE", dest='demodata_save',
+                        default="", type=str,
+                        help='path hdf5 file to save demonstration')
+    parser.add_argument('-r', '--recordreward', metavar="REWARD_SAVE", dest='reward_save',
+                        default="", type=str,
+                        help='path csv file to save rewards')
+    parser.add_argument('-t', '--time', metavar="TIMELIMIT", dest='timelimit',
+                        default=2, type=int,
+                        help='time limit for a match')
+
+    args = parser.parse_args()
+
+    DEMO_PATH = args.demodata_save
+    if DEMO_PATH == "":
+        SAVE_DEMO = False
+    else:
+        if os.path.exists(DEMO_PATH):
+            SAVE_DEMO = True
+        else:
+            exit()
+    REWARDS_PATH = args.reward_save
+    if REWARDS_PATH == "":
+        REWARD_SAVE = False
+    else:
+        if os.path.exists(REWARDS_PATH):
+            REWARD_SAVE = True
+        else:
+            exit()
+
+    TIMELIMIT = args.timelimit
+
     os.system('clear')
     game_engine = DoomGame()
-    game = GameInstance(game_engine, name="PLAYER1",config_path=CONFIG_PATH,steps_update_origin=10, n_bots=1, reward_param=REWARDS)
+    game = GameInstance(game_engine, name="PLAYER1",config_path=CONFIG_PATH,steps_update_origin=10, n_bots=1, reward_param=REWARDS, timelimit=TIMELIMIT)
 
     # game.game.set_render_weapon(False)
     # game.game.set_render_crosshair(False)
@@ -260,6 +295,8 @@ if __name__ == "__main__":
     pre_time = 0
     pre_frag_count = 0
 
+    rewards_total = {'healthloss':[], 'frag':[], 'dist':[], 'suicide':[], 'total':[]}
+
     game.new_episode()
     while not game.is_episode_finished():
 
@@ -268,27 +305,32 @@ if __name__ == "__main__":
         label_enemy = [game.get_enemy_x(), game.get_enemy_y(), game.get_enemy_w(), game.get_enemy_h()]
         # s = game.get_screen_buff()
         game.advance_action(4)
-        game.update_variables(step)
+        r,reward_detail =  game.update_variables(step)
         action = game.get_last_action()
-        cur_time = game.game.get_episode_time()
         cur_frag_count = game.game.get_game_variable(GameVariable.FRAGCOUNT)
 
         pre_frag_count = cur_frag_count
+        if REWARD_SAVE==True and not game.is_episode_finished():
+            rewards_total['healthloss'].append(reward_detail['healthloss'])
+            rewards_total['frag'].append(reward_detail['frag'])
+            rewards_total['suicide'].append(reward_detail['suicide'])
+            rewards_total['dist'].append(reward_detail['dist'])
+            rewards_total['total'].append(r)
 
         if not action.count(1.0) == 0:
-            r, reward_detail = game.update_variables(step)
-            sys.stdout.write("\r---%d----\n"%(step))
-            sys.stdout.write("\rENEMY_POS: (%.2f, %.2f)\n"%(game.get_enemy_x(), game.get_enemy_y()))
-            sys.stdout.write("\rENEMY_W_H: (%.2f, %.2f)\n"%(game.get_enemy_w(), game.get_enemy_h()))
-            sys.stdout.write("\rREWARD:%.2f\n"%r)
-            sys.stdout.write("\rREWARD_DETAIL:"+str(reward_detail)+"\n")
-            sys.stdout.write("\rACTION:"+str(action)+"\n")
-            sys.stdout.write("\rFRAG:%d DEATH:%d KILL:%d \n"%(game.get_frag_count(), game.get_death_count(), game.get_kill_count()))
-            sys.stdout.write("\rHEALTH: %d AMMO:%d\n"%(game.get_health(), game.get_ammo()))
-            sys.stdout.write("\rPOSX: %.3f POSY: %.3f\n"%(game.get_pos_x(), game.get_pos_y()))
-            sys.stdout.flush()
+            if not game.is_episode_finished():
+                sys.stdout.write("\r---%d----\n"%(step))
+                sys.stdout.write("\rENEMY_POS: (%.2f, %.2f)\n"%(game.get_enemy_x(), game.get_enemy_y()))
+                sys.stdout.write("\rENEMY_W_H: (%.2f, %.2f)\n"%(game.get_enemy_w(), game.get_enemy_h()))
+                sys.stdout.write("\rREWARD:%.2f\n"%r)
+                sys.stdout.write("\rREWARD_DETAIL:"+str(reward_detail)+"\n")
+                sys.stdout.write("\rACTION:"+str(action)+"\n")
+                sys.stdout.write("\rFRAG:%d DEATH:%d KILL:%d \n"%(game.get_frag_count(), game.get_death_count(), game.get_kill_count()))
+                sys.stdout.write("\rHEALTH: %d AMMO:%d\n"%(game.get_health(), game.get_ammo()))
+                sys.stdout.write("\rPOSX: %.3f POSY: %.3f\n"%(game.get_pos_x(), game.get_pos_y()))
+                sys.stdout.flush()
             step += 1
-            if SAVE_DEMO == True and cur_time >= START_TIME and not game.is_episode_finished():
+            if SAVE_DEMO == True and not game.is_episode_finished():
               log_state.append(s)
               log_state_center.append(s_center)
               log_action.append(action)
@@ -304,7 +346,7 @@ if __name__ == "__main__":
               log_enemy_h.append(label_enemy[3])
               log_hitcount.append(game.get_hitcount())
               log_damagecount.append(game.get_damagecount())
-            elif SAVE_DEMO == True and cur_time >= START_TIME and game.is_episode_finished():
+            elif SAVE_DEMO == True and game.is_episode_finished():
                 log_state.append(s)
                 log_state_center.append(s_center)
                 log_action.append(action)
@@ -330,6 +372,10 @@ if __name__ == "__main__":
 
     # print(tabulate([(int(game.game.get_game_variable(GameVariable.FRAGCOUNT)), int(game.game.get_game_variable(GameVariable.DEATHCOUNT)))], ['KILL', 'DEATH'], tablefmt='grid'))
     # print()
+
+    if REWARD_SAVE == True:
+        df_reward = pd.DataFrame(rewards_total)
+        df_reward.to_csv(REWARDS_PATH)
 
     if SAVE_DEMO == True:
       
