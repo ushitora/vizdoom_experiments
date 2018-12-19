@@ -8,7 +8,7 @@ import sys, os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from game_instance_simpledeathmatch import GameInstanceSimpleDeathmatch
 
-CONFIG_PATH = "./config/simple_deathmatch.cfg"
+CONFIG_PATH = "./config/simple_deathmatch_h80_s80.cfg"
 RESOLUTION = (120,120)
 CROSS = (200,320)
 # SAVE_DEMO = True
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--time', metavar="TIMELIMIT", dest='timelimit',
                         default=2, type=int,
                         help='time limit for a match')
+    parser.add_argument('-c', '--config', metavar="CONFIG_PATH", dest="config_path", default="", type=str)
 
     args = parser.parse_args()
 
@@ -62,6 +63,8 @@ if __name__ == "__main__":
             REWARD_SAVE = True
         else:
             exit()
+    
+    CONFIG_PATH = args.config_path
 
     TIMELIMIT = args.timelimit
 
