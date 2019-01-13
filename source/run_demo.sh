@@ -23,6 +23,7 @@ DIRECTORY=`basename $1`
 
 #DEMONSTRATION_DIR=$(cd ./demonstration/; pwd)
 DEMONSTRATION_DIR=/data_local/kikuchi/demonstration
+DATA_DIR=/data/kikuchi
 echo ${DEMONSTRATION_DIR}
 SCRIPT_DIR=$(cd ${DIRECTORY}; pwd)
-${DOCKER_CMD} run -ti --net=host --privileged -e DISPLAY=${DISPLAY} -v ${SCRIPT_DIR}:/home/vizdoom/${DIRECTORY} -v ${DEMONSTRATION_DIR}:/home/vizdoom/${DIRECTORY}/demonstration  --rm --name ${DIRECTORY} ${DIRECTORY}
+${DOCKER_CMD} run -ti --net=host --privileged -e DISPLAY=${DISPLAY} -v ${SCRIPT_DIR}:/home/vizdoom/${DIRECTORY} -v ${DEMONSTRATION_DIR}:/home/vizdoom/${DIRECTORY}/demonstration -v ${DATA_DIR}:/home/vizdoom/${DIRECTORY}/data  --rm --name ${DIRECTORY} ${DIRECTORY}

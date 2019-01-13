@@ -72,8 +72,8 @@ ENV USER_NAME vizdoom
 ENV HOME_DIR /home/$USER_NAME
 #
 # Replace HOST_UID/HOST_GUID with your user / group id (needed for X11)
-ENV HOST_UID 1000
-ENV HOST_GID 1000
+ENV HOST_UID 1013
+ENV HOST_GID 2000
 
 RUN export uid=${HOST_UID} gid=${HOST_GID} && \
     mkdir -p ${HOME_DIR} && \
