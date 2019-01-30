@@ -31,8 +31,8 @@ class GameInstanceBasic(object):
         game.set_screen_format(ScreenFormat.CRCGCB)
         game.set_screen_resolution(ScreenResolution.RES_640X480)
         game.set_labels_buffer_enabled(True)
-        game.set_render_crosshair(False)
-        game.set_render_weapon(False)
+        game.set_render_crosshair(True)
+        game.set_render_weapon(True)
         color = 4
         game.init()
         print(self.name + " initialized.")
@@ -93,8 +93,8 @@ class GameInstanceBasic(object):
 
         return reward, reward_detail
 
-    def make_action(self, step ,action):
-        self.game.make_action(action)       
+    def make_action(self, step ,action, framerepeat):
+        self.game.make_action(action, framerepeat)
         reward, reward_detail = self.update_variables(step)
         return reward, reward_detail
     
@@ -104,19 +104,13 @@ class GameInstanceBasic(object):
         return reward, reward_detail
 
     def get_reward(self, m_frag,m_death, m_kill, m_health, m_ammo, m_posx, m_posy):
-        reward_detail = {'frag':0.0, 'suicide':0.0,'kill':0.0, 'dist':0.0,'medkit':0.0, 'healthloss':0.0,'ammo':0.0}
+        reward_detail = {'kill':0.0, 'suicide':0.0}
 
-        if m_frag > 0:
-            reward_detail['frag'] = (m_frag) * self.reward_param['frag']
-            reward_detail['suicide'] = 0.0
-        else:
+        if m_frag < 0:
             reward_detail['suicide'] = (m_frag*-1) * self.reward_param['suicide']
-            reward_detail['frag'] = 0.0
         
         if m_kill > 0:
-            reward_detail['kill'] = 1.0
-        else:
-            reward_detail['kill'] = 0.0
+            reward_detail['kill'] = self.reward_param['kill']
 
         return sum(reward_detail.values()), reward_detail
 
@@ -127,15 +121,27 @@ class GameInstanceBasic(object):
         return self.game.get_available_buttons_size()
 
     def get_frag_count(self):
-        return self.game.get_game_variable(GameVariable.FRAGCOUNT)
-
+        return self.frag_count
+    
     def get_death_count(self):
-        return self.game.get_game_variable(GameVariable.DEATHCOUNT)
-
+        return self.death_count
+    
     def get_kill_count(self):
-        return self.game.get_game_variable(GameVariable.KILLCOUNT)
+        return self.kill_count
 
     def get_ammo(self):
+        return self.ammo
+
+    def get_frag_count_direct(self):
+        return self.game.get_game_variable(GameVariable.FRAGCOUNT)
+
+    def get_death_count_direct(self):
+        return self.game.get_game_variable(GameVariable.DEATHCOUNT)
+
+    def get_kill_count_direct(self):
+        return self.game.get_game_variable(GameVariable.KILLCOUNT)
+
+    def get_ammo_direct(self):
         return self.game.get_game_variable(GameVariable.SELECTED_WEAPON_AMMO)
 
     def get_health(self):
@@ -167,7 +173,7 @@ class GameInstanceBasic(object):
         area = 0
         ans = [0,0,0,0]
         for l in self.game.get_state().labels:
-            if(l.object_id != 0 and l.object_name=="DoomPlayer"):
+            if(l.object_id != 0 and l.object_name=="Cacodemon"):
                 if area < l.width*l.height:
                     area = l.width*l.height
                     ans = [l.x, l.y, l.width, l.height]
@@ -191,7 +197,7 @@ class GameInstanceBasic(object):
 
     def is_enemy(self):
         for l in self.game.get_state().labels:
-            if(l.object_id != 0 and l.object_name=="DoomPlayer"):
+            if(l.object_id != 0 and l.object_name=="Cacodemon"):
                 return True
 
         return False
