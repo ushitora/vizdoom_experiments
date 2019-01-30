@@ -16,7 +16,7 @@ CROSS = (200,320)
 # SAVE_DEMO = True
 SAVE_DEMO = False
 
-REWARDS = {'frag':1, 'suicide':-1}
+REWARDS = {'kill':1, 'suicide':-1}
 
 def preprocess(img):
     if len(img.shape) == 3:
@@ -77,6 +77,7 @@ if __name__ == "__main__":
     log_state_center = []
     log_action = []
     log_frag = []
+    log_kill = []
     log_death = []
     log_health = []
     log_ammo = []
@@ -106,13 +107,15 @@ if __name__ == "__main__":
         action = game.get_last_action()
         print(action)
 
-        if not action.count(1.0) == 0:
+        if True:
+        # if not action.count(1.0) == 0:
             step += 1
             if SAVE_DEMO == True and not game.is_episode_finished():
                 log_state.append(s)
                 log_state_center.append(s_center)
                 log_action.append(action)
                 log_frag.append(game.get_frag_count())
+                log_kill.append(game.get_kill_count())
                 log_death.append(game.get_death_count())
                 log_health.append(game.get_health())
                 log_ammo.append(game.get_ammo())
@@ -128,9 +131,10 @@ if __name__ == "__main__":
                     log_state.append(s)
                     log_state_center.append(s_center)
                     log_action.append(action)
-                    log_frag.append(log_frag[-1])
-                    log_death.append(log_death[-1])
-                    log_health.append(log_health[-1])
+                    log_frag.append(game.get_frag_count())
+                    log_kill.append(game.get_kill_count())
+                    log_death.append(game.get_death_count())
+                    log_health.append(game.get_frag_count())
                     log_ammo.append(log_ammo[-1])
                     log_posx.append(log_posx[-1])
                     log_posy.append(log_posy[-1])
@@ -144,7 +148,8 @@ if __name__ == "__main__":
                 pass
 
         #print(reward_detail)
-        print('%5.2f %5.2f %5.2f %5.2f %5.2f '%(reward,game.get_frag_count(), game.get_death_count(), game.get_pos_x(), game.get_pos_y()))
+        print('R:%5.2f F:%5.2f K:%5.2f D:%5.2f X:%5.2f Y:%5.2f '%(reward,game.get_frag_count(),game.get_kill_count(), game.get_death_count(), game.get_pos_x(), game.get_pos_y()))
+        # print(game.get_enemy_label())
     game.close()
 
     if SAVE_DEMO == True:
@@ -161,6 +166,7 @@ if __name__ == "__main__":
             f.create_dataset(new_group+"/states_center", data=log_state_center)
             f.create_dataset(new_group+"/action", data=log_action)
             f.create_dataset(new_group+"/frag",data=log_frag)
+            f.create_dataset(new_group+'/kill', data=log_kill)
             f.create_dataset(new_group+"/death",data=log_death)
             f.create_dataset(new_group+"/health",data=log_health)
             f.create_dataset(new_group+"/ammo",data=log_ammo)
