@@ -164,6 +164,9 @@ class GameInstanceSimpleDeathmatch(object):
 
     def get_pos_y(self):
         return self.game.get_game_variable(GameVariable.POSITION_Y)
+    
+    def get_angle(self):
+        return self.game.get_game_variable(GameVariable.ANGLE)
 
     def get_hitcount(self):
         return self.game.get_game_variable(GameVariable.HITCOUNT)
@@ -219,6 +222,12 @@ class GameInstanceSimpleDeathmatch(object):
             return True
         else:
             return False
+        
+    def get_label(self,name):
+        for l in self.game.get_state().labels:
+            if(l.object_id != 0 and l.object_name==name):
+                return l
+        return None
     
 
 class GameInstanceBasic(object):
@@ -313,6 +322,7 @@ class GameInstanceBasic(object):
 
         return h
 
+    
     def get_pos_x(self):
         return self.game.get_game_variable(GameVariable.POSITION_X)
 
