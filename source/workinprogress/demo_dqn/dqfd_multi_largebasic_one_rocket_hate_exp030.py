@@ -17,6 +17,8 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from replay_memory import ReplayMemory
 import pandas as pd
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from collections import defaultdict
 # %matplotlib inline
 
 
@@ -27,37 +29,20 @@ JST = timezone(timedelta(hours=+9),'JST')
 
 DATETIME = datetime.now(JST)
 LOGDIR = "../data/demo_dqn/logs/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
+CSV_DIR "../data/demo_dqn/logs_csv/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
 MODEL_PATH =  "../data/demo_dqn/models/model_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/model.ckpt"
 POSITION_DATA_PATH = "../data/demo_dqn/position_data/positiondata_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+".csv"
-# CONFIG_FILE_PATH = "./config/simple_deathmatch.cfg"
-# CONFIG_FILE_PATH = "./config/simple_deathmatch_h40_s20.cfg"
-# CONFIG_FILE_PATH = "./config/simple_deathmatch_h20_s0_noattack_nearspawn.cfg"
-# CONFIG_FILE_PATH = "./config/large_basic_randomspawn.cfg"
-# CONFIG_FILE_PATH = "./config/simpler_basic.cfg"
-# CONFIG_FILE_PATH = "./config/large_basic_pistol.cfg"
-# CONFIG_FILE_PATH = "./config/large_basic_pistol_hate.cfg"
 CONFIG_FILE_PATH = "./config/large_basic_rocket_hate.cfg"
 PLAY_LOGDIR = "../data/demo_dqn/playlogs/playlog_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
-# DEMO_PATH = ["../demonstration/large_basic/demo_largebasic01.hdf5","../demonstration/large_basic_randomspawn/demo_largebasic_randomspawn.hdf5"]
-# DEMO_PATH = ["../demonstration/large_basic_pistol/demo_largebasic_pistol01.hdf5"]
-# DEMO_PATH = ["../demonstration/large_basic_pistol_6action/demo_largebasic_pistol_6action.hdf5"]
-# DEMO_PATH = ["../demonstration/large_basic_rocket_6action/demo_largebasic_rocket_6action01.hdf5"]
-# DEMO_PATH = ["../demonstration/largebasic_pistol_hate/demo_largebasic_pistol_hate01.hdf5"]
 DEMO_PATH = ["../demonstration/largebasic_rocket_hate/demo_largebasic_rocket_hate01.hdf5"]
-# POSITIVEDATA_PATH = ["../data/positive_replay/positive_replay05.npy","../data/positive_replay/positive_replay06.npy"]
-# __name__ = "learning_imitation"
-__name__ = "learning_async"
-# __name__ = "test"
+# run_mode = "learning_imitation"
+run_mode = "learning_async"
+# run_mode = "test"
 N_ACTION = 6
 N_AGENT_ACTION = 2**6
 BOTS_NUM = 1
 N_WORKERS = 1
-# REWARDS = {'living':-0.01, 'healthloss':-0.01, 'medkit':0.0, 'ammo':0.0, 'frag':1.0, 'dist':1e-4, 'suicide':-1.0}
-# REWARDS = {'living':-1.0, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':100.0, 'dist':0.0, 'suicide':-100.0, 'kill':100.0,'death':-100.0,'enemysight':0.0, 'ammoloss':0.0}
-# REWARDS = {'living':-1.0, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':0.0, 'dist':0.0, 'suicide':-100.0, 'kill':100.0,'death':-100.0,'enemysight':0.0, 'ammoloss':0.0}
-# REWARDS = {'living':-0.01, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':0.0, 'dist':0.0, 'suicide':0.0, 'kill':1.0,'death':-1.0,'enemysight':0.0, 'ammoloss':0.0}
 REWARDS = {'living':-1.0, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':0.0, 'dist':0.0, 'suicide':0.0, 'kill':100.0,'death':-100.0,'enemysight':0.0, 'ammoloss':0.0}
-# REWARDS = {'living':-0.01, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':0.0, 'dist':0.0, 'suicide':-1.0, 'kill':1.0,'death':-1.0,'enemysight':0.0, 'ammoloss':0.0}
 LSTM_SIZE = 1024
 N_ADV = 5
 N_SEQ = 5
@@ -79,19 +64,29 @@ BETA_MAX = 0.4
 EPS_MAX = 0.9
 EPS_MIN = 0.85
 N_STEPS = int(200000/N_WORKERS)
-#N_STEPS = int(100000/N_WORKERS)
 IMIT_MODEL_PATH = "../data/demo_dqn/models/model_2019-02-01-03-28-37/model.ckpt"
+SAVE_DATA = True
 
 
 # In[ ]:
 
 
-if not os.path.exists(LOGDIR):
-    os.mkdir(LOGDIR)
-if not os.path.exists(os.path.dirname(MODEL_PATH)):
-    os.mkdir(os.path.dirname(MODEL_PATH))
-if not os.path.exists(PLAY_LOGDIR):
-    os.mkdir(PLAY_LOGDIR)
+from exp_condition.condition_exp030 import *
+__name__ = run_mode
+
+
+# In[ ]:
+
+
+if SAVE_DATA == True:
+    if not os.path.exists(LOGDIR):
+        os.mkdir(LOGDIR)
+    if not os.path.exists(os.path.dirname(MODEL_PATH)):
+        os.mkdir(os.path.dirname(MODEL_PATH))
+    if not os.path.exists(PLAY_LOGDIR):
+        os.mkdir(PLAY_LOGDIR)
+    if not os.path.exists(CSV_DIR):
+        os.mkdir(CSV_DIR)
 
 
 # In[ ]:
@@ -131,6 +126,9 @@ class Environment(object):
         self.count_update = 0
         self.rewards_detail = None
         self.position_data_buff = position_data
+        
+        self.record_action = []
+        self.record_treeidx = []
         
         self.count_idx = np.zeros_like(replaymemory.tree.tree, dtype=np.int32)
         print(self.name," initialized...")
@@ -204,11 +202,11 @@ class Environment(object):
         self.network.copy_network_learning2target(self.sess)
         try:
             while not coordinator.should_stop():
-#             while True:
                 play_log = []
                 reward,frag, death,kill,total_detail,steps = self.test_agent(reward_buff =play_log)
-                with open(os.path.join(PLAY_LOGDIR, "playlog_step%02d.txt"%int(self.progress*100)), 'wb') as f:
-                    pickle.dump(play_log, f)
+                if SAVE_DATA == True:
+                    with open(os.path.join(PLAY_LOGDIR, "playlog_step%02d.txt"%int(self.progress*100)), 'wb') as f:
+                        pickle.dump(play_log, f)
                 if self.rewards_detail is not None:
                     self.rewards_detail.append(total_detail)
 #                 print("----------TEST at %.1f ---------"%(self.progress*100))
@@ -222,7 +220,8 @@ class Environment(object):
                     self.log_server.write_score(self.sess,self.step,  reward, frag, death ,kill, steps)
                     if self.progress >= self.model_gen_count/12:
                         self.model_gen_count += 1
-                        self.log_server.save_model(sess=self.sess, model_path=MODEL_PATH, step=self.model_gen_count+1)
+                        if SAVE_DATA == True:
+                            self.log_server.save_model(sess=self.sess, model_path=MODEL_PATH, step=self.model_gen_count+1)
                 
                 self.step += 1
                 if self.n_step is not None:
@@ -248,6 +247,7 @@ class Environment(object):
             s1_ = self.preprocess(self.game.get_screen_buff())
             self.push_obs(s1_)
             agent_action_idx = self.agent.act_eps_greedy(self.sess, self.obs['s1'], self.progress)
+            self.record_action.append(agent_action_idx)
             
             if self.position_data_buff is not None:
                 enemy_label = self.game.get_label("Cacodemon")
@@ -295,6 +295,7 @@ class Environment(object):
             
             if self.step % INTERVAL_BATCH_LEARNING == 0 and len(self.replay_memory) >= N_BATCH:
                 s1, actions, r_one, r_adv, isdemo, is_weight, tree_idx = self.make_batch()
+                self.record_treeidx.append(tree_idx)
                 if self.log_server is not None:
                     self.count_idx[tree_idx] += 1
                 loss_values = self.network.update_parameter_server(self.sess, s1, actions, r_one, r_adv, isdemo, is_weight)
@@ -988,9 +989,47 @@ def load_positivedata(replay_memory, data_path_list):
 # In[ ]:
 
 
+def set_random_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+    tf.set_random_seed(seed)
+
+
+# In[ ]:
+
+
+def convert_tensorboardlog_to_csv(dpath, output_dir):
+    summary_iterators = [EventAccumulator(os.path.join(dpath, dname)).Reload() for dname in os.listdir(dpath)]
+
+    tags = summary_iterators[0].Tags()['scalars']
+
+    for it in summary_iterators:
+        assert it.Tags()['scalars'] == tags
+
+    out = defaultdict(list)
+    steps = defaultdict(list)
+    walltimes = defaultdict(list)
+
+    for tag in tags:
+        for events in zip(*[acc.Scalars(tag) for acc in summary_iterators]):
+            assert len(set(e.step for e in events)) == 1
+
+            out[tag.split("/")[-1]].append([e.value for e in events][0])
+            steps[tag.split("/")[-1]].append([e.step for e in events][0])
+            walltimes[tag.split("/")[-1]].append([e.wall_time for e in events][0])
+    
+    for key in out.keys():
+        pd.DataFrame({'Value':out[key], 'Step':steps[key], 'Wall time':walltimes[key]}).to_csv(os.path.join(output_dir, key+".csv"))
+            
+    return out, steps, walltimes
+
+
+# In[ ]:
+
+
 if __name__=="learning_imitation":
     print(LOGDIR)
-    replaymemory = ReplayMemory(10000)
+    replaymemory = ReplayMemory(10000, random_seed=random.randint(0,1000))
     load_demo_one(replaymemory, DEMO_PATH)
     
     config = tf.ConfigProto(gpu_options = tf.GPUOptions(visible_device_list=USED_GPU))
@@ -1014,7 +1053,8 @@ if __name__=="learning_imitation":
         agent = Agent(network,random_seed=0)
 #         imitation_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, start_time=starttime, end_time=end_time, random_seed=0)
         imitation_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, n_step=N_STEPS, random_seed=0)
-        imitation_env.log_server = parameter_server
+        if SAVE_DATA == True:
+            imitation_env.log_server = parameter_server
         imitation_env.replay_memory = replaymemory
         thread_imitation = threading.Thread(target=imitation_env.run_prelearning, args=(coordinator,))
 
@@ -1024,7 +1064,8 @@ if __name__=="learning_imitation":
         agent = Agent(network,random_seed=100)
         test_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, start_time=starttime, end_time=end_time, random_seed=100)
 #         test_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, n_step=10000, random_seed=0)
-        test_env.log_server = parameter_server
+        if SAVE_DATA == True:
+            test_env.log_server = parameter_server
         thread_test = threading.Thread(target=test_env.run_test, args=(coordinator,))
         
         parameter_server.write_graph(sess)
@@ -1042,7 +1083,8 @@ if __name__=="learning_imitation":
                 coordinator.request_stop()
                 break
 
-        parameter_server.save_model(sess=sess, step=15, model_path=MODEL_PATH)
+        if SAVE_DATA == True:
+            parameter_server.save_model(sess=sess, step=15, model_path=MODEL_PATH)
         
         
 
@@ -1054,11 +1096,10 @@ if __name__=="learning_imitation":
 
 if __name__=="learning_async":
     print(LOGDIR)
-    replaymemory = ReplayMemory(50000)
+    set_random_seed(0)
+    replaymemory = ReplayMemory(50000,random_seed=random.randint(0,1000))
     load_demo_one(replaymemory, DEMO_PATH)
 #     load_positivedata(replaymemory, POSITIVEDATA_PATH)
-    
-    tf.set_random_seed(0)
     config = tf.ConfigProto(gpu_options = tf.GPUOptions(visible_device_list=USED_GPU))
     config.gpu_options.allow_growth = True
     config.log_device_placement = False
@@ -1081,15 +1122,16 @@ if __name__=="learning_async":
             game_instance=GameInstanceSimpleDeathmatch(DoomGame(),name=name,n_bots=1,config_path=CONFIG_FILE_PATH, reward_param=REWARDS, steps_update_origin=10,timelimit=2)
 #             game_instance=GameInstanceSimpleBasic(DoomGame(),name=name,config_path=CONFIG_FILE_PATH)
             network = NetworkLocal(name, parameter_server)
-            agent = Agent(network, random_seed=i)
+            agent = Agent(network, random_seed=random.randint(0,1000))
 #             e = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, start_time=starttime, end_time=end_time, random_seed=i)
-            e = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, n_step=N_STEPS, random_seed=i, position_data=position_data_buff)
+            e = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, n_step=N_STEPS, random_seed=random.randint(0,1000), position_data=position_data_buff)
             e.replay_memory = replaymemory
             environments.append(e)
 
-        environments[0].log_server = parameter_server
-        environments[0].times_act = []
-        environments[0].times_update = []
+        if SAVE_DATA == True:
+            environments[0].log_server = parameter_server
+            environments[0].times_act = []
+            environments[0].times_update = []
         
 #         name = "updating"
 #         game_instance_update=GameInstanceBasic(DoomGame(),name=name,n_bots=1,config_path=CONFIG_FILE_PATH, reward_param=REWARDS, steps_update_origin=10,timelimit=2)
@@ -1104,27 +1146,26 @@ if __name__=="learning_async":
 #         threads.append(thread_update)
 
         name = "test"
-#         test_seed = np.random.randint(1000)
-        test_seed = 100
+        test_seed = random.randint(0,1000)
         game_instance=GameInstanceSimpleDeathmatch(DoomGame(),name=name,n_bots=1,config_path=CONFIG_FILE_PATH, reward_param=REWARDS, steps_update_origin=10,timelimit=2)
 #         game_instance=GameInstanceSimpleBasic(DoomGame(),name=name,config_path=CONFIG_FILE_PATH)
         network = NetworkLocal(name, parameter_server)
         agent = Agent(network, random_seed=test_seed)
 #         test_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, start_time=starttime, end_time=end_time, random_seed=test_seed)
         test_env = Environment(sess = sess ,name=name, agent=agent, game_instance=game_instance, network=network, n_step=N_STEPS, random_seed=test_seed)
-        test_env.log_server = parameter_server
+        if SAVE_DATA == True:
+            test_env.log_server = parameter_server
         test_env.rewards_detail = []
         thread_test = threading.Thread(target=test_env.run_test, args=(coordinator,))
 
     for e in environments:
 #         threads.append(threading.Thread(target=e.run_exploring, args=(coordinator,)))
-            threads.append(threading.Thread(target=e.run_learning, args=(coordinator,)))
+        threads.append(threading.Thread(target=e.run_learning, args=(coordinator,)))
 
     threads.append(thread_test)
 
     parameter_server.write_graph(sess)
     sess.run(tf.global_variables_initializer())
-
 
 #         parameter_server.load_model(sess=sess, step=15, model_path="./models/model_imitation181221/model.ckpt")
 #         parameter_server.load_model(sess=sess, step=15, model_path="./models/largebasic_random/model_largebasicrandom_imitation190109/model.ckpt")
@@ -1143,15 +1184,17 @@ if __name__=="learning_async":
             coordinator.request_stop()
             break
     
-    parameter_server.save_model(sess=sess, step=15, model_path=MODEL_PATH)
+    if SAVE_DATA == True:
+        parameter_server.save_model(sess=sess, step=15, model_path=MODEL_PATH)
 
-    GIF_BUFF = []
-    REWARD_BUFF = []
-    r,f,d,imgs,_,step = test_env.test_agent(gif_buff=GIF_BUFF,reward_buff=REWARD_BUFF)
-    GIF_BUFF[0].save('gifs/test.gif',save_all=True, append_images=GIF_BUFF[1:], optimize=False, duration=40*4, loop=0)
+#     GIF_BUFF = []
+#     REWARD_BUFF = []
+#     r,f,d,imgs,_,step = test_env.test_agent(gif_buff=GIF_BUFF,reward_buff=REWARD_BUFF)
+#     GIF_BUFF[0].save('gifs/test.gif',save_all=True, append_images=GIF_BUFF[1:], optimize=False, duration=40*4, loop=0)
 
     position_data_buff = np.array(position_data_buff)
     pd.DataFrame(data=position_data_buff, columns=['enemy_center_x', 'enemy_center_y', 'player_position_x', 'player_position_y', 'angle']).to_csv(POSITION_DATA_PATH)
+    convert_tensorboardlog_to_csv(LOGDIR, output_dir=CSV_DIR)
     
     print(LOGDIR)
     print(sum([e.step for e in environments]))
@@ -1198,6 +1241,8 @@ if __name__=="test":
 #         parameter_server.load_model(sess=sess, step=15, model_path="./models/largebasic_random/model_largebasicrandom_imitation190109/model.ckpt")
 #         parameter_server.load_model(sess=sess, step=15, model_path="models/model_temp/model_2019-01-16-15-32-54/model.ckpt")
 #     parameter_server.load_model(sess=sess, step=15, model_path="../data/demo_dqn/models/model_2019-02-04-00-35-30/model.ckpt")
+
+    sess.run(tf.global_variables_initializer())
 
 
 # In[ ]:
@@ -1586,4 +1631,30 @@ def plot_rewards_match(rewards):
     ax_suicide.plot(reward_suicide)
     ax_total.plot(reward_total)
     return f
+
+
+# In[ ]:
+
+
+def tabulate_events(dpath):
+    summary_iterators = [EventAccumulator(os.path.join(dpath, dname)).Reload() for dname in os.listdir(dpath)]
+
+    tags = summary_iterators[0].Tags()['scalars']
+
+    for it in summary_iterators:
+        assert it.Tags()['scalars'] == tags
+
+    out = defaultdict(list)
+    steps = defaultdict(list)
+    walltimes = defaultdict(list)
+
+    for tag in tags:
+        for events in zip(*[acc.Scalars(tag) for acc in summary_iterators]):
+            assert len(set(e.step for e in events)) == 1
+
+            out[tag].append([e.value for e in events])
+            steps[tag].append([e.step for e in events])
+            walltimes[tag].append([e.wall_time for e in events])
+
+    return out, steps, walltimes
 
