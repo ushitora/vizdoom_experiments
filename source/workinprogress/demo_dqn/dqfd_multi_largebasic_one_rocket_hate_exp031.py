@@ -29,7 +29,7 @@ JST = timezone(timedelta(hours=+9),'JST')
 
 DATETIME = datetime.now(JST)
 LOGDIR = "../data/demo_dqn/logs/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
-CSV_DIR "../data/demo_dqn/logs_csv/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
+CSV_DIR =  "../data/demo_dqn/logs_csv/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
 MODEL_PATH =  "../data/demo_dqn/models/model_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/model.ckpt"
 POSITION_DATA_PATH = "../data/demo_dqn/position_data/positiondata_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+".csv"
 CONFIG_FILE_PATH = "./config/large_basic_rocket_hate.cfg"
@@ -41,7 +41,7 @@ run_mode = "learning_async"
 N_ACTION = 6
 N_AGENT_ACTION = 2**6
 BOTS_NUM = 1
-N_WORKERS = 1
+N_WORKERS = 5
 REWARDS = {'living':-1.0, 'healthloss':0.0, 'medkit':0.0, 'ammo':0.0, 'frag':0.0, 'dist':0.0, 'suicide':0.0, 'kill':100.0,'death':-100.0,'enemysight':0.0, 'ammoloss':0.0}
 LSTM_SIZE = 1024
 N_ADV = 5
@@ -73,6 +73,7 @@ SAVE_DATA = True
 
 from exp_condition.condition_exp031 import *
 __name__ = run_mode
+print(EXPERIMENT_NAME)
 
 
 # In[ ]:
@@ -989,6 +990,15 @@ def load_positivedata(replay_memory, data_path_list):
 # In[ ]:
 
 
+def write_experiment_info(wall_time, exp_dir, n_agent,log_dir ,record_file):
+    with open(record_file, mode='a') as f:
+        output_str = str(wall_time) + "," + exp_dir + "," + str(n_agent)+ ","+log_dir+"\n"
+        f.write(output_str)
+
+
+# In[ ]:
+
+
 def set_random_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
@@ -1195,6 +1205,7 @@ if __name__=="learning_async":
     position_data_buff = np.array(position_data_buff)
     pd.DataFrame(data=position_data_buff, columns=['enemy_center_x', 'enemy_center_y', 'player_position_x', 'player_position_y', 'angle']).to_csv(POSITION_DATA_PATH)
     convert_tensorboardlog_to_csv(LOGDIR, output_dir=CSV_DIR)
+    write_experiment_info(DATETIME.timestamp(), EXPERIMENT_NAME, N_WORKERS, LOGDIR,"record_dir.csv")
     
     print(LOGDIR)
     print(sum([e.step for e in environments]))

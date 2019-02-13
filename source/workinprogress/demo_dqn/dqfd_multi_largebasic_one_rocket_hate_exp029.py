@@ -29,7 +29,7 @@ JST = timezone(timedelta(hours=+9),'JST')
 
 DATETIME = datetime.now(JST)
 LOGDIR = "../data/demo_dqn/logs/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
-CSV_DIR "../data/demo_dqn/logs_csv/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
+CSV_DIR =  "../data/demo_dqn/logs_csv/log_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/"
 MODEL_PATH =  "../data/demo_dqn/models/model_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+"/model.ckpt"
 POSITION_DATA_PATH = "../data/demo_dqn/position_data/positiondata_"+DATETIME.strftime("%Y-%m-%d-%H-%M-%S")+".csv"
 CONFIG_FILE_PATH = "./config/large_basic_rocket_hate.cfg"
@@ -1195,6 +1195,8 @@ if __name__=="learning_async":
     position_data_buff = np.array(position_data_buff)
     pd.DataFrame(data=position_data_buff, columns=['enemy_center_x', 'enemy_center_y', 'player_position_x', 'player_position_y', 'angle']).to_csv(POSITION_DATA_PATH)
     convert_tensorboardlog_to_csv(LOGDIR, output_dir=CSV_DIR)
+    with open("./record_dir.txt", mode='a') as f:
+        f.write(LOGDIR+"\n")
     
     print(LOGDIR)
     print(sum([e.step for e in environments]))
