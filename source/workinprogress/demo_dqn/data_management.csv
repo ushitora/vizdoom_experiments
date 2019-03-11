@@ -1,0 +1,93 @@
+Experiment Date,Log ID,Position ID,Model ID,Experiment ID,Experiment Name
+2019-02-03-16-31-54, 1, 1, 1,exp010,exp_largebasic_rocket_hate_nagent1
+2019-02-02-11-31-31, 2, 2,2 ,exp011,exp_largebasic_rocket_hate_nagent1
+2019-02-01-20-50-17, 3,3,3,exp012,exp_largebasic_rocket_hate_nagent1
+2019-02-02-13-19-03, 4,4,4,exp013,exp_largebasic_rocket_hate_nagent1
+2019-02-02-14-30-22, 5,5,5,exp014,exp_largebasic_rocket_hate_nagent1
+2019-02-04-19-32-59,6,6,6,exp026,exp_largebasic_rocket_hate_nagent2
+2019-02-05-22-53-19,7,7,7,exp026,exp_largebasic_rocket_hate_nagent3
+2019-02-06-08-08-50,8,8,8,exp026,exp_largebasic_rocket_hate_nagent4
+2019-02-06-21-28-35,9,9,9,exp026,exp_largebasic_rocket_hate_nagent5
+2019-02-08-18-09-18,10,10,10,exp026,exp_largebasic_rocket_hate_nagent6
+2019-02-09-05-16-28,11,11,11,exp026,exp_largebasic_rocket_hate_nagent7
+2019-02-04-20-21-11,12,12,12,exp027,exp_largebasic_rocket_hate_nagent2
+2019-02-06-00-03-29,13,13,13,exp027,exp_largebasic_rocket_hate_nagent3
+2019-02-06-09-19-02,14,14,14,exp027,exp_largebasic_rocket_hate_nagent4
+2019-02-06-22-39-26,15,15,15,exp027,exp_largebasic_rocket_hate_nagent5
+2019-02-08-19-53-07,16,16,16,exp027,exp_largebasic_rocket_hate_nagent6
+2019-02-09-07-03-22,17,17,17,exp027,exp_largebasic_rocket_hate_nagent7
+2019-02-04-20-57-30,18,18,18,exp028,exp_largebasic_rocket_hate_nagent2
+2019-02-06-01-15-11,19,19,19,exp028,exp_largebasic_rocket_hate_nagent3
+2019-02-06-12-37-32,20,20,20,exp028,exp_largebasic_rocket_hate_nagent4
+2019-02-06-23-51-56,21,21,21,exp028,exp_largebasic_rocket_hate_nagent5
+2019-02-08-21-06-22,22,22,22,exp028,exp_largebasic_rocket_hate_nagent6
+2019-02-09-08-52-24,23,23,23,exp028,exp_largebasic_rocket_hate_nagent7
+2019-02-04-21-38-38,24,24,24,exp029,exp_largebasic_rocket_hate_nagent2
+2019-02-06-02-37-23,25,25,25,exp029,exp_largebasic_rocket_hate_nagent3
+2019-02-06-13-59-34,26,26,26,exp029,exp_largebasic_rocket_hate_nagent4
+2019-02-07-01-13-38,27,27,27,exp029,exp_largebasic_rocket_hate_nagent5
+2019-02-08-22-28-36,28,28,28,exp029,exp_largebasic_rocket_hate_nagent6
+2019-02-09-10-58-04,29,29,29,exp029,exp_largebasic_rocket_hate_nagent7
+2019-02-04-22-33-35,30,30,30,exp030,exp_largebasic_rocket_hate_nagent2
+2019-02-06-04-25-34,31,31,31,exp030,exp_largebasic_rocket_hate_nagent3
+2019-02-06-18-14-17,32,32,32,exp030,exp_largebasic_rocket_hate_nagent4
+2019-02-07-03-02-10,33,33,33,exp030,exp_largebasic_rocket_hate_nagent5
+2019-02-09-00-17-44,34,34,34,exp030,exp_largebasic_rocket_hate_nagent6
+2019-02-09-13-38-50,35,35,35,exp030,exp_largebasic_rocket_hate_nagent7
+2019-02-09-18-15-56,36,36,36,exp031,exp_largebasic_rocket_hate_eps1
+2019-02-09-19-46-31,37,37,37,exp031,exp_largebasic_rocket_hate_eps1
+2019-02-09-21-16-15,38,38,38,exp031,exp_largebasic_rocket_hate_eps1
+2019-02-12-19-33-47,39,39,39,exp031,exp_largebasic_rocket_hate_epsnagent1
+2019-02-12-20-41-12,40,40,40,exp032,exp_largebasic_rocket_hate_epsnagent1
+2019-02-12-21-57-25,41,41,41,exp033,exp_largebasic_rocket_hate_epsnagent1
+2019-02-12-23-31-10,42,42,42,exp034,exp_largebasic_rocket_hate_epsnagent1
+2019-02-13-01-42-10,43,43,43,exp035,exp_largebasic_rocket_hate_epsnagent1
+2019-02-01-22-11-21,44,44,44,exp015,exp_largebasic_rocket_hate_nagent1
+2019-02-14-20-37-49,45,45,45,exp031,exp_largebasic_rocket_hate_eps2
+2019-02-14-21-43-32,46,46,46,exp032,exp_largebasic_rocket_hate_eps2
+2019-02-14-23-00-24,47,47,47,exp033,exp_largebasic_rocket_hate_eps2
+2019-02-15-00-34-48,48,48,48,exp034,exp_largebasic_rocket_hate_eps2
+2019-02-15-02-45-47,49,49,49,exp035,exp_largebasic_rocket_hate_eps2
+2019-02-15-06-46-27,50,50,50,exp031,exp_largebasic_rocket_hate_eps3
+2019-02-15-07-53-40,51,51,51,exp032,exp_largebasic_rocket_hate_eps3
+2019-02-15-09-10-32,52,52,52,exp033,exp_largebasic_rocket_hate_eps3
+2019-02-15-10-44-56,53,53,53,exp034,exp_largebasic_rocket_hate_eps3
+2019-02-15-12-55-24,54,54,54,exp035,exp_largebasic_rocket_hate_eps3
+2019-02-27-18-50-31,55,55,55,exp036, exp_large_basic_shotgun_hate_init2
+2019-02-28-22-24-09,56,56,56,exp038, exp_largebasic_shotgun_hate_agent1
+2019-02-28-23-30-04,57,57,57,exp039, exp_largebasic_shotgun_hate_agent1
+2019-03-01-00-44-19,58,58,58,exp040, exp_largebasic_shotgun_hate_agent1
+2019-03-01-02-14-26,59,59,59,exp041, exp_largebasic_shotgun_hate_agent1
+2019-03-01-04-19-47,60,60,60,exp042, exp_largebasic_shotgun_hate_agent1
+2019-03-01-07-46-51,61,61,61,exp038,exp_largebasic_shotgun_hate_agent2
+2019-03-01-08-53-06,62,62,62,exp039,exp_largebasic_shotgun_hate_agent2
+2019-03-01-10-08-21,63,63,63,exp040,exp_largebasic_shotgun_hate_agent2
+2019-03-01-11-41-00,64,64,64,exp041,exp_largebasic_shotgun_hate_agent2
+2019-03-01-13-48-50,65,65,65,exp042,exp_largebasic_shotgun_hate_agent2
+2019-03-01-21-17-33,66,66,66,exp043,exp_largebasic_shotgun_hate_agent_noimit1
+2019-03-01-22-24-03,67,67,67,exp044,exp_largebasic_shotgun_hate_agent_noimit1
+2019-03-02-02-30-35,68,68,68,exp038,exp_largebasic_shotgun_hate_agent3
+2019-03-02-03-36-40,69,69,69,exp039,exp_largebasic_shotgun_hate_agent3
+2019-03-02-04-48-24,70,70,70,exp040,exp_largebasic_shotgun_hate_agent3
+2019-03-02-06-19-41,71,71,71,exp041,exp_largebasic_shotgun_hate_agent3
+2019-03-02-08-26-32,72,72,72,exp042,exp_largebasic_shotgun_hate_agent3
+2019-03-02-11-55-17,73,73,73,exp038,exp_largebasic_shotgun_hate_agent4
+2019-03-02-12-59-33,74,74,74,exp039,exp_largebasic_shotgun_hate_agent4
+2019-03-02-14-14-48,75,75,75,exp040,exp_largebasic_shotgun_hate_agent4
+2019-03-02-15-46-25,76,76,76,exp041,exp_largebasic_shotgun_hate_agent4
+2019-03-02-17-53-15,77,77,77,exp042,exp_largebasic_shotgun_hate_agent4
+2019-03-02-21-19-08,78,78,78,exp038,exp_largebasic_shotgun_hate_agent5
+2019-03-02-22-24-13,79,79,79,exp039,exp_largebasic_shotgun_hate_agent5
+2019-03-02-23-38-58,80,80,80,exp040,exp_largebasic_shotgun_hate_agent5
+2019-03-03-01-11-05,81,81,81,exp041,exp_largebasic_shotgun_hate_agent5
+2019-03-03-03-19-18,82,82,82,exp042,exp_largebasic_shotgun_hate_agent5
+2019-03-03-21-59-45,83,83,83,exp045,exp_largebasic_rocket_hate_agent_noimit1
+2019-03-03-23-07-15,84,84,84,exp046,exp_largebasic_rocket_hate_agent_noimit1
+2019-03-04-03-12-51,85,85,85,exp045,exp_largebasic_rocket_hate_agent_noimit2
+2019-03-04-04-20-00,86,86,86,exp046,exp_largebasic_rocket_hate_agent_noimit2
+2019-03-04-08-26-55,87,87,87,exp045,exp_largebasic_rocket_hate_agent_noimit3
+2019-03-04-09-34-34,88,88,88,exp046,exp_largebasic_rocket_hate_agent_noimit3
+2019-03-04-13-40-59,89,89,89,exp045,exp_largebasic_rocket_hate_agent_noimit4
+2019-03-04-14-47-29,90,90,90,exp046,exp_largebasic_rocket_hate_agent_noimit4
+2019-03-04-18-54-01,91,91,91,exp045,exp_largebasic_rocket_hate_agent_noimit5
+2019-03-04-20-00-20,92,92,92,exp046,exp_largebasic_rocket_hate_agent_noimit5
